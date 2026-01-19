@@ -5,22 +5,25 @@ import './App.css';
 
 function App() {
   // --- STATE MANAGEMENT ---
-  const [token, setToken] = useState(localStorage.getItem('token')); // Check if user is already logged in
+  const [token, setToken] = useState(localStorage.getItem('token'));
   const [urls, setUrls] = useState([]);  
+  
   // Inputs for Dashboard
   const [inputUrl, setInputUrl] = useState('');
   const [customSlug, setCustomSlug] = useState('');  
+  
   // Inputs for Auth (Login/Register)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false); // Toggle between Login and Register form  
+  const [isRegistering, setIsRegistering] = useState(false); 
   const [error, setError] = useState(null);
+
   // --- EFFECT: Fetch URLs if logged in ---
   useEffect(() => {
     if (token) {
       fetchUrls();
     }
-  }, [token]); //whenever 'token' changes
+  }, [token]);
 
   // --- AUTH FUNCTIONS ---
   const handleAuth = async (e) => {
@@ -29,13 +32,12 @@ function App() {
     const endpoint = isRegistering ? 'register' : 'login';
     
     try {
-      const res = await axios.post(`http://localhost:5000/${endpoint}`, { email, password });
-      
-      if (!isRegistering) { // If Login, save the token!
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/${endpoint}`, { email, password });      
+      if (!isRegistering) {
         localStorage.setItem('token', res.data.token);
         setToken(res.data.token);
       } 
-      else {  // If Register success, switch to login mode
+      else { 
         setIsRegistering(false);
         alert("Registration successful! Please login.");
       }
@@ -46,22 +48,22 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token'); // Destroy the key
+    localStorage.removeItem('token');
     setToken(null);
-    setUrls([]); // Clear private data
+    setUrls([]);
   };
 
   // --- DATA FUNCTIONS ---
   const fetchUrls = async () => {
-    try {  // attach token to the header
-      const res = await axios.get('http://localhost:5000/shortUrls', {
+    try {  
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/shortUrls`, {
         headers: { 'x-auth-token': token }
       });
       setUrls(res.data);
     } 
     catch (err) {
       console.error(err);
-      if (err.response?.status === 401) handleLogout(); // If token expired, logout
+      if (err.response?.status === 401) handleLogout();
     }
   };
 
@@ -69,21 +71,21 @@ function App() {
     e.preventDefault();
     setError(null);
     try {
-      await axios.post('http://localhost:5000/shortUrls', 
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/shortUrls`, 
         { fullUrl: inputUrl, customSlug: customSlug },
-        { headers: { 'x-auth-token': token } } // Attach token 
+        { headers: { 'x-auth-token': token } } 
       );
       setInputUrl('');
       setCustomSlug('');
       fetchUrls();
-    } catch (err) {
+    } 
+    catch (err) {
       setError(err.response?.data?.message || "Error creating link");
     }
   };
 
-  // --- CONDITIONAL RENDERING (Login Screen vs Dashboard) ---
+  // --- CONDITIONAL RENDERING ---
   if (!token) {
-    // RENDER: LOGIN / REGISTER FORM
     return (
       <div className="App" style={{ padding: '2rem', textAlign: 'center', maxWidth: '400px', margin: '0 auto' }}>
         <h1>{isRegistering ? "Register" : "Login"}</h1>
@@ -104,7 +106,6 @@ function App() {
     );
   }
 
-  // RENDER: DASHBOARD (If Token exists)
   return (
     <div className="App" style={{ padding: '2rem', textAlign: 'center' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '80%', margin: '0 auto' }}>
@@ -133,7 +134,7 @@ function App() {
         </thead>
         <tbody>
           {urls.map((url) => {
-             const shortLink = `http://localhost:5000/${url.short}`;
+             const shortLink = `${import.meta.env.VITE_API_BASE_URL}/${url.short}`;             
              return (
               <tr key={url._id}>
                 <td style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
